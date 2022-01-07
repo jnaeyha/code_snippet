@@ -1,0 +1,30 @@
+from glob import glob
+import pandas as pd
+import sys
+
+
+def merge_multiple_columns(path):
+    """
+	This function finds .dat.gz file as per file patten given using glob function.
+	To apply some transformation on data avaialble in .dat.gz , will read this as csv file , where we are ignoring header and footer and last line, as its .dat.gz file we are passing param called engine as python and compression type = 'gzip'
+	Merge multiple column values into one column and give datatype of that column as string.
+	After applying transformation will convert csv into again .gzip file.
+    """
+	#Data sets are stored in a file, Pandas can load them into a DataFrame.
+    df = pd.DataFrame()
+	
+	#glob is used to return all file paths that match a specific pattern
+    f = glob('/dbfs'+ path + '/' + 'aa_bb_cc*.dat.gz') # list gzip files
+	
+	#Uncompressed gzip file and read as csv where header and footer are igonred.
+    df = pd.read_csv(f[0],header=None,skiprows=[0],skipfooter=1, engine='python',compression='gzip')
+	
+	#Merge multiple column values into one column , where file have 50 columns and we wnat to merge all columns after 24 , and drop null value and make datatype of that column as string.
+	#Data in columns will be seprated by delimeter |	
+    df['column_name'] = df[df.columns[24:]].apply(lambda x: '|'.join(x.dropna().astype(str)),axis=1)
+	
+	#Dropping all individual columns after 24
+    df.drop(df.columns[24:-1],axis=1,inplace=True)
+	
+	#Writing back .csv file into .dat.gz file for futher processing.
+    df.to_csv(f[0],index=False,header=None,compression='gzip')
